@@ -1,7 +1,9 @@
 // lib/screens/login_screen.dart
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
+import 'admin_dashboard.dart'; // Import halaman admin
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -9,7 +11,8 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'admin@dappcorp.com');
+  // Default email sudah disesuaikan dengan database
+  final _emailController = TextEditingController(text: 'admin@dapp.com');
   final _passwordController = TextEditingController(text: 'admin123');
   final ApiService _apiService = ApiService();
   
@@ -27,16 +30,30 @@ class _LoginScreenState extends State<LoginScreen> {
       _passwordController.text.trim(),
     );
 
+    if (!mounted) return;
+
     setState(() {
       _isLoading = false;
     });
 
     if (success) {
-      // Jika berhasil, arahkan ke Dashboard
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => DashboardScreen()),
-      );
+      // Ambil role yang disimpan saat login
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      String? role = prefs.getString('role');
+
+      if (role == 'ADMIN' || role == 'HR') {
+        // Jika Admin atau HR, arahkan ke Dashboard Admin
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => AdminDashboard()),
+        );
+      } else {
+        // Jika Employee (Pegawai), arahkan ke Dashboard Pegawai
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => DashboardScreen()),
+        );
+      }
     } else {
       setState(() {
         _errorMessage = 'Login gagal. Periksa kembali email dan password Anda.';
