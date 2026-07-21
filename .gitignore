@@ -25,3 +25,14 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# Node & Backend
+node_modules/
+.env
+
+# Flutter & Mobile
+mobile/.dart_tool/
+mobile/.pub/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
