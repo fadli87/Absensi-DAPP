@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import 'dashboard_screen.dart';
-import 'admin_dashboard.dart'; // Import halaman admin
+import 'admin_responsive_layout.dart'; // <-- Mengarah ke layout responsif admin yang baru
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -11,7 +11,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  // Default email sudah disesuaikan dengan database
+  // Default email disesuaikan dengan database
   final _emailController = TextEditingController(text: 'admin@dapp.com');
   final _passwordController = TextEditingController(text: 'admin123');
   final ApiService _apiService = ApiService();
@@ -42,10 +42,10 @@ class _LoginScreenState extends State<LoginScreen> {
       String? role = prefs.getString('role');
 
       if (role == 'ADMIN' || role == 'HR') {
-        // Jika Admin atau HR, arahkan ke Dashboard Admin
+        // Jika Admin atau HR, arahkan ke Layout Responsif Admin (Otomatis Desktop/HP)
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => AdminDashboard()),
+          MaterialPageRoute(builder: (context) => AdminResponsiveLayout()),
         );
       } else {
         // Jika Employee (Pegawai), arahkan ke Dashboard Pegawai

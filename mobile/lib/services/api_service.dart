@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService {
   // Ganti dengan IP address laptop Anda yang terhubung ke jaringan yang sama
   static const String baseUrl = 'http://192.168.8.110:5005';
-  
+
 
   // ==========================================
   // FUNGSI AUTHENTICATION (LOGIN)
@@ -122,4 +122,55 @@ class ApiService {
     await prefs.remove('token');
     await prefs.remove('role');
   }
+// ==========================================
+  // AMBIL PENGATURAN LOKASI KANTOR
+  // ==========================================
+  static Future<Map<String, dynamic>> getOfficeLocation() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/office'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      throw Exception('Gagal memuat pengaturan lokasi kantor');
+    }
+  }
+
+  // ==========================================
+  // UPDATE PENGATURAN LOKASI KANTOR
+  // ==========================================
+  static Future<bool> updateOfficeLocation(String name, double latitude, double longitude, int radius) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/office'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'name': name,
+        'latitude': latitude,
+        'longitude': longitude,
+        'radius': radius,
+      }),
+    );
+
+    return response.statusCode == 200;
+  }
+
+
+
+
+
 }

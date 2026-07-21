@@ -4,7 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql" // Sesuaikan dengan provider database Anda (sqlite/postgresql/mysql)
-  
+
 }
 
 enum Role {
@@ -51,4 +51,12 @@ model Attendance {
   checkOutSelfie String?          
 
   createdAt      DateTime         @default(now())
+}
+  model OfficeLocation {
+  id        String   @id @default(uuid())
+  name      String   @default("Kantor Pusat")
+  latitude  Float    // Garis lintang (Latitude)
+  longitude Float    // Garis bujur (Longitude)
+  radius    Int      // Radius dalam meter (contoh: 100 meter)
+  updatedAt DateTime @updatedAt
 }

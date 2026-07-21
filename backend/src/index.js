@@ -6,7 +6,8 @@ const cors = require('cors');
 
 const authRoutes = require('./routes/auth');
 const attendanceRoutes = require('./routes/attendance');
-const userRoutes = require('./routes/user'); // <-- 1. Pastikan rute user diimpor
+const userRoutes = require('./routes/user');
+const officeRoutes = require('./routes/office'); // <-- 1. Impor rute office/geofencing
 
 const app = express();
 
@@ -16,7 +17,8 @@ app.use(cors());
 // Gunakan rute
 app.use('/api/auth', authRoutes);
 app.use('/api/attendance', attendanceRoutes);
-app.use('/api/users', userRoutes); // <-- 2. TAMBAHKAN BARIS INI
+app.use('/api/users', userRoutes);
+app.use('/api/office', officeRoutes); // <-- 2. Daftarkan endpoint geofencing
 
 app.get('/', (req, res) => {
   res.json({ message: 'API Absensi Backend is running smoothly!' });

@@ -1,6 +1,7 @@
 // lib/screens/dashboard_screen.dart
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -75,8 +76,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (position != null) return position;
 
       position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.medium,
-        timeLimit: Duration(seconds: 8),
+        desiredAccuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 10),
       );
       return position;
     } catch (e) {
@@ -85,8 +86,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // Fungsi Check-In dengan Selfie & GPS (Menggunakan Multipart Request)
-  void _handleCheckIn() async {
+  // Rumus Haversine untuk menghitung jarak dalam meter antara dua koordinat
+  double _calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+    const double earthRadius = 6371000; // Radius bumi dalam meter
+    
+    double dLat = _degreesToRadians(lat2 - lat1);
+    double dLon = _degreesToRadians(lon2 - lon1);
+
+    double a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(_degreesToRadians(lat1)) * cos(_degreesToRadians(lat2)) *
+        sin(dLon / 2) * sin(dLon / 2);
+
+    double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+    return earthRadius * c;
+  }
+
+  double _degreesToRadians(double degrees) {
+    return degrees * pi / 180;
+  }
+
+  // Fungsi Validasi Geofencing & Kirim Absen (Check-In / Check-Out)
+  Future<void> _processAttendance(String type) async {
     if (_imageFile == null) {
       setState(() => _statusMessage = 'Harap ambil foto selfie terlebih dahulu!');
       return;
@@ -94,38 +115,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     setState(() {
       _isLoading = true;
-      _statusMessage = 'Mendapatkan lokasi GPS & mengirim data...';
+      _statusMessage = 'Memeriksa lokasi GPS & radius kantor...';
     });
 
+    // 1. Ambil posisi GPS Pegawai saat ini
     Position? position = await _determinePosition();
     if (position == null) {
       setState(() => _isLoading = false);
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-
-    if (token == null) {
-      setState(() {
-        _statusMessage = 'Sesi habis. Silakan login ulang.';
-        _isLoading = false;
-      });
-      return;
-    }
-
     try {
-      // Menggunakan MultipartRequest karena mengirim file gambar + teks (latitude/longitude)
+      // 2. Ambil data titik pusat & radius kantor dari database server
+      Map<String, dynamic> office = await ApiService.getOfficeLocation();
+      double officeLat = office['latitude'];
+      double officeLng = office['longitude'];
+      int maxRadius = office['radius']; // Batas radius dalam meter
+
+      // 3. Hitung jarak menggunakan Haversine Formula
+      double distanceInMeters = _calculateDistance(
+        officeLat, 
+        officeLng, 
+        position.latitude, 
+        position.longitude,
+      );
+
+      // 4. Validasi apakah pegawai berada di luar radius kantor
+      if (distanceInMeters > maxRadius) {
+        setState(() {
+          _isLoading = false;
+          _statusMessage = 'ABSEN DITOLAK: Anda di luar radius kantor!\nJarak: ${distanceInMeters.toStringAsFixed(1)}m (Maks: ${maxRadius}m)';
+        });
+        
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text('Di Luar Jangkauan Kantor'),
+            content: Text(
+              'Anda berada di luar radius kantor yang diizinkan.\n\n'
+              '• Jarak Anda: ${distanceInMeters.toStringAsFixed(1)} meter\n'
+              '• Radius Maksimal: $maxRadius meter'
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context), child: Text('OK'))
+            ],
+          ),
+        );
+        return;
+      }
+
+      // 5. Jika lolos validasi jarak, ambil token dan kirim data ke server
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('jwt_token') ?? prefs.getString('token');
+
+      if (token == null) {
+        setState(() {
+          _statusMessage = 'Sesi habis. Silakan login ulang.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      String endpoint = type == 'in' ? '/attendance/check-in' : '/attendance/check-out';
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('${Constants.baseUrl}/attendance/check-in'),
+        Uri.parse('${Constants.baseUrl}$endpoint'),
       );
 
       request.headers['Authorization'] = 'Bearer $token';
       request.fields['latitude'] = position.latitude.toString();
       request.fields['longitude'] = position.longitude.toString();
-      
-      // Lampirkan file foto selfie
       request.files.add(await http.MultipartFile.fromPath('image', _imageFile!.path));
 
       var streamedResponse = await request.send();
@@ -134,81 +193,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         setState(() {
-          _statusMessage = 'BERHASIL CHECK-IN DENGAN SELFIE!\nLokasi: ${position!.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
+          _statusMessage = 'BERHASIL ${type == 'in' ? 'CHECK-IN' : 'CHECK-OUT'}!\nJarak: ${distanceInMeters.toStringAsFixed(1)}m dari kantor.';
           _imageFile = null; // Reset foto setelah sukses
         });
       } else {
         setState(() {
-          _statusMessage = 'Gagal Check-In: ${data['message'] ?? 'Terjadi kesalahan'}';
+          _statusMessage = 'Gagal: ${data['message'] ?? 'Terjadi kesalahan'}';
         });
       }
     } catch (e) {
-      setState(() => _statusMessage = 'Koneksi error ke server: $e');
+      setState(() => _statusMessage = 'Gagal memuat geofencing kantor / koneksi error: $e');
     } finally {
       setState(() => _isLoading = false);
     }
   }
 
-  // Fungsi Check-Out dengan Selfie & GPS
-  void _handleCheckOut() async {
-    if (_imageFile == null) {
-      setState(() => _statusMessage = 'Harap ambil foto selfie terlebih dahulu untuk Check-Out!');
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-      _statusMessage = 'Mendapatkan lokasi GPS & mengirim data...';
-    });
-
-    Position? position = await _determinePosition();
-    if (position == null) {
-      setState(() => _isLoading = false);
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final token = prefs.getString('jwt_token');
-
-    if (token == null) {
-      setState(() {
-        _statusMessage = 'Sesi habis. Silakan login ulang.';
-        _isLoading = false;
-      });
-      return;
-    }
-
-    try {
-      var request = http.MultipartRequest(
-        'POST',
-        Uri.parse('${Constants.baseUrl}/attendance/check-out'),
-      );
-
-      request.headers['Authorization'] = 'Bearer $token';
-      request.fields['latitude'] = position.latitude.toString();
-      request.fields['longitude'] = position.longitude.toString();
-      request.files.add(await http.MultipartFile.fromPath('image', _imageFile!.path));
-
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-      var data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        setState(() {
-          _statusMessage = 'BERHASIL CHECK-OUT DENGAN SELFIE!\nLokasi: ${position!.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}';
-          _imageFile = null;
-        });
-      } else {
-        setState(() {
-          _statusMessage = 'Gagal Check-Out: ${data['message'] ?? 'Terjadi kesalahan'}';
-        });
-      }
-    } catch (e) {
-      setState(() => _statusMessage = 'Koneksi error ke server: $e');
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
+  void _handleCheckIn() => _processAttendance('in');
+  void _handleCheckOut() => _processAttendance('out');
 
   void _handleLogout() async {
     await _apiService.logout();
@@ -289,7 +290,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               icon: _isLoading 
                   ? Container(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                   : Icon(Icons.login, color: Colors.white),
-              label: Text(_isLoading ? 'Memproses...' : 'Check In (Selfie + GPS)', style: TextStyle(fontSize: 16, color: Colors.white)),
+              label: Text(_isLoading ? 'Memproses...' : 'Check In (Geofencing + Selfie)', style: TextStyle(fontSize: 16, color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFF059669),
                 padding: EdgeInsets.symmetric(vertical: 14),
@@ -300,7 +301,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ElevatedButton.icon(
               onPressed: _isLoading ? null : _handleCheckOut,
               icon: Icon(Icons.logout, color: Colors.white),
-              label: Text('Check Out (Selfie + GPS)', style: TextStyle(fontSize: 16, color: Colors.white)),
+              label: Text('Check Out (Geofencing + Selfie)', style: TextStyle(fontSize: 16, color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFD97706),
                 padding: EdgeInsets.symmetric(vertical: 14),
