@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql" // Sesuaikan dengan provider database Anda (sqlite/postgresql/mysql)
-
 }
 
 enum Role {
@@ -20,16 +19,36 @@ enum AttendanceStatus {
   ABSENT
 }
 
+// Model Shift Kerja untuk pengaturan jam masuk, pulang, dan toleransi keterlambatan
+model Shift {
+  id               Int      @id @default(autoincrement())
+  name             String   // Contoh: Shift Pagi, Jam Kantor Normal
+  checkInTime      String   // Format Jam, contoh: "08:00"
+  checkOutTime     String   // Format Jam, contoh: "17:00"
+  toleranceMinutes Int      @default(15) // Toleransi keterlambatan dalam menit
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  users            User[]   // Relasi: Satu shift bisa dimiliki oleh banyak pegawai
+}
+
 model User {
-  id          Int          @id @default(autoincrement())
-  name        String
-  email       String       @unique
-  password    String
-  role        Role         @default(EMPLOYEE)
-  isActive    Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  attendances Attendance[]
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  password     String
+  role         Role     @default(EMPLOYEE)
+  department   String?  // Contoh: IT, HR, Finance, Operasional
+  isActive     Boolean  @default(true)
+  
+  // Relasi ke Shift Kerja
+  shiftId      Int?     
+  shift        Shift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  attendances  Attendance[]
 }
 
 model Attendance {
@@ -47,12 +66,13 @@ model Attendance {
   checkInSelfie  String?          
   
   checkOutLat    Float?           
-  checkOutLong   Float?          
+  checkOutLong   Float?           
   checkOutSelfie String?          
 
   createdAt      DateTime         @default(now())
 }
-  model OfficeLocation {
+
+model OfficeLocation {
   id        String   @id @default(uuid())
   name      String   @default("Kantor Pusat")
   latitude  Float    // Garis lintang (Latitude)

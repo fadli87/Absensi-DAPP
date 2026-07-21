@@ -18,7 +18,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 1. Endpoint Check-In (Absen Masuk + Selfie + GPS)
+// 1. Endpoint Check-In (Absen Masuk + Selfie + GPS + Shift Validation)
 router.post('/check-in', verifyToken, upload.single('image'), async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -36,6 +36,7 @@ router.post('/check-in', verifyToken, upload.single('image'), async (req, res) =
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
+        // Cek apakah sudah absen hari ini
         const existingAttendance = await prisma.attendance.findFirst({
             where: { userId: userId, date: today }
         });
@@ -44,20 +45,48 @@ router.post('/check-in', verifyToken, upload.single('image'), async (req, res) =
             return res.status(400).json({ success: false, message: 'Anda sudah melakukan absen masuk hari ini.' });
         }
 
-        // Simpan ke database (pastikan skema prisma Anda mendukung field foto/GPS jika ingin disimpan)
+        // Ambil data user beserta shift kerjanya untuk menentukan status (PRESENT / LATE)
+        const user = await prisma.user.findUnique({
+            where: { id: userId },
+            include: { shift: true }
+        });
+
+        let attendanceStatus = 'PRESENT';
+
+        if (user && user.shift) {
+            // Format checkInTime dari database misal "08:00"
+            const [shiftHour, shiftMinute] = user.shift.checkInTime.split(':').map(Number);
+
+            const shiftDeadline = new Date(now);
+            shiftDeadline.setHours(shiftHour, shiftMinute, 0, 0);
+
+            // Tambahkan toleransi keterlambatan (dalam menit)
+            shiftDeadline.setMinutes(shiftDeadline.getMinutes() + user.shift.toleranceMinutes);
+
+            // Jika waktu sekarang melebihi deadline shift + toleransi, status jadi LATE (Terlambat)
+            if (now > shiftDeadline) {
+                attendanceStatus = 'LATE';
+            }
+        }
+
+        // Simpan ke database dengan data GPS & Selfie yang aktif
         const newAttendance = await prisma.attendance.create({
             data: {
                 userId: userId,
                 date: today,
                 checkIn: now,
-                status: 'PRESENT',
-                // latitude: parseFloat(latitude), // Aktifkan jika kolom Prisma sudah ada
-                // longitude: parseFloat(longitude),
-                // selfie: selfieImage
+                status: attendanceStatus,
+                checkInLat: parseFloat(latitude),
+                checkInLong: parseFloat(longitude),
+                checkInSelfie: selfieImage
             }
         });
 
-        res.json({ success: true, message: 'Absen masuk berhasil dicatat!', data: newAttendance });
+        res.json({
+            success: true,
+            message: attendanceStatus === 'LATE' ? 'Absen masuk berhasil, namun Anda tercatat TERLAMBAT.' : 'Absen masuk berhasil dicatat!',
+            data: newAttendance
+        });
     } catch (error) {
         console.error('[GAGAL] Error saat Check-in:', error);
         res.status(500).json({ success: false, message: 'Internal server error', error_detail: error.message });
@@ -73,6 +102,9 @@ router.post('/check-out', verifyToken, upload.single('image'), async (req, res) 
 
         if (!selfieImage) {
             return res.status(400).json({ success: false, message: 'Foto selfie wajib diunggah untuk check-out.' });
+        }
+        if (!latitude || !longitude) {
+            return res.status(400).json({ success: false, message: 'Koordinat GPS tidak valid.' });
         }
 
         const now = new Date();
@@ -92,7 +124,12 @@ router.post('/check-out', verifyToken, upload.single('image'), async (req, res) 
 
         const updatedAttendance = await prisma.attendance.update({
             where: { id: existingAttendance.id },
-            data: { checkOut: now }
+            data: {
+                checkOut: now,
+                checkOutLat: parseFloat(latitude),
+                checkOutLong: parseFloat(longitude),
+                checkOutSelfie: selfieImage
+            }
         });
 
         res.json({ success: true, message: 'Absen pulang berhasil dicatat!', data: updatedAttendance });
