@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs'); // <-- Tambahkan import bcrypt
 const prisma = require('../lib/prisma');
 
 const router = express.Router();
@@ -10,8 +11,7 @@ router.post('/login', async (req, res) => {
   try {
     console.log(`[DEBUG] Mencoba login dengan email: ${email}`);
 
-    // GANTI menjadi findFirst agar lebih aman dan tidak rewel soal @unique
-    // Hapus sementara 'include' agar tidak bentrok dengan schema database
+    // Cari user berdasarkan email
     const user = await prisma.user.findFirst({
       where: { email: email }
     });
@@ -21,7 +21,10 @@ router.post('/login', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Email tidak ditemukan.' });
     }
 
-    if (password !== user.password) {
+    // Pengecekan password menggunakan bcrypt (PENTING!)
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
       console.log(`[DEBUG] Password yang dimasukkan salah.`);
       return res.status(401).json({ success: false, message: 'Password salah.' });
     }

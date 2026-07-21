@@ -1,69 +1,54 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-}
-
-model Department {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
-}
-
-model Shift {
-  id        Int      @id @default(autoincrement())
-  name      String
-  startTime String   // e.g., "08:00"
-  endTime   String   // e.g., "17:00"
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  users     User[]
-}
-
-model User {
-  id           Int          @id @default(autoincrement())
-  email        String       @unique
-  password     String
-  name         String
-  role         Role         @default(EMPLOYEE)
-  departmentId Int
-  shiftId      Int
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-
-  department   Department   @relation(fields: [departmentId], references: [id])
-  shift        Shift        @relation(fields: [shiftId], references: [id])
-  attendances  Attendance[]
-}
-
-model Attendance {
-  id          Int      @id @default(autoincrement())
-  userId      Int
-  date        DateTime @db.Date
-  checkIn     DateTime?
-  checkOut    DateTime?
-  status      AttendanceStatus @default(PRESENT)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user        User     @relation(fields: [userId], references: [id])
+  provider = "postgresql" // Sesuaikan dengan provider database Anda (sqlite/postgresql/mysql)
+  
 }
 
 enum Role {
   ADMIN
+  HR
   EMPLOYEE
 }
 
 enum AttendanceStatus {
   PRESENT
-  ABSENT
   LATE
-  LEAVE
+  PERMIT
+  ABSENT
+}
+
+model User {
+  id          Int          @id @default(autoincrement())
+  name        String
+  email       String       @unique
+  password    String
+  role        Role         @default(EMPLOYEE)
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  attendances Attendance[]
+}
+
+model Attendance {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date           DateTime         
+  checkIn        DateTime?        
+  checkOut       DateTime?        
+  status         AttendanceStatus @default(PRESENT)
+  
+  // Data Validasi Tambahan (Selfie & GPS)
+  checkInLat     Float?           
+  checkInLong    Float?           
+  checkInSelfie  String?          
+  
+  checkOutLat    Float?           
+  checkOutLong   Float?          
+  checkOutSelfie String?          
+
+  createdAt      DateTime         @default(now())
 }

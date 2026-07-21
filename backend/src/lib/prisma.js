@@ -1,13 +1,11 @@
+// backend/src/lib/prisma.js
 const { PrismaClient } = require('@prisma/client');
-const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
+require('dotenv').config();
 
-// Menggunakan koneksi pool agar stabil dan tidak ECONNREFUSED
-const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false } // Penting untuk koneksi aman ke Supabase
-});
-
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 

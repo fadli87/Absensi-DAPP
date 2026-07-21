@@ -1,50 +1,47 @@
-require('dotenv').config();
+// backend/prisma/seed.js
+const { PrismaClient } = require('@prisma/client');
+const { PrismaPg } = require('@prisma/adapter-pg');
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
-const prisma = require('../src/lib/prisma');
+require('dotenv').config();
+
+// Konfigurasi Driver Adapter untuk Prisma 7
+const connectionString = process.env.DIRECT_URL || process.env.DATABASE_URL;
+const pool = new Pool({ connectionString });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  console.log('🌱 Starting seed...');
+  console.log('Memulai proses seeding...');
 
-  // Create Departments
-  const dept = await prisma.department.upsert({
-    where: { name: 'IT' },
-    update: {},
-    create: { name: 'IT' },
-  });
-  console.log('✅ Department:', dept.name);
-
-  // Create Shifts
-  const shift = await prisma.shift.upsert({
-    where: { id: 1 },
-    update: {},
-    create: { name: 'Morning', startTime: '08:00', endTime: '17:00' },
-  });
-  console.log('✅ Shift:', shift.name);
-
-  // Create Admin user
   const hashedPassword = await bcrypt.hash('admin123', 10);
+
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@dappcorp.com' },
+    where: { email: 'admin@dapp.com' },
     update: {},
     create: {
-      email: 'admin@dappcorp.com',
+      name: 'Super Admin',
+      email: 'admin@dapp.com',
       password: hashedPassword,
-      name: 'Admin DAPP',
       role: 'ADMIN',
-      departmentId: dept.id,
-      shiftId: shift.id,
+      isActive: true,
     },
   });
-  console.log('✅ Admin user:', admin.email);
 
-  console.log('🎉 Seed completed!');
+  console.log('-----------------------------------');
+  console.log('Berhasil membuat user pertama!');
+  console.log(`Email    : ${admin.email}`);
+  console.log(`Password : admin123`);
+  console.log(`Role     : ${admin.role}`);
+  console.log('-----------------------------------');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Seed failed:', e);
+    console.error('Error saat seeding:', e);
     process.exit(1);
   })
   .finally(async () => {
     await prisma.$disconnect();
+    await pool.end();
   });

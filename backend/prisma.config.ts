@@ -7,6 +7,7 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
+    seed: "node prisma/seed.js", // <-- Baris ini ditambahkan untuk konfigurasi seed
   },
   datasource: {
     // Use DIRECT_URL (Session Pooler port 5432) for Prisma CLI — avoids P1017 on Transaction Pooler (port 6543)
