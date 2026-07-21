@@ -1,4 +1,3 @@
-// backend/src/routes/user.js
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
@@ -6,22 +5,31 @@ const prisma = require('../lib/prisma');
 const router = express.Router();
 
 // ==========================================
-// 1. GET /api/users (Ambil daftar semua user)
+// 1. GET /api/users (Ambil daftar semua user + Shift & Departemen)
 // ==========================================
 router.get('/', async (req, res) => {
     try {
         const users = await prisma.user.findMany({
-            // Hanya tampilkan data yang aman (jangan kirim password ke frontend)
             select: {
                 id: true,
                 name: true,
                 email: true,
                 role: true,
+                department: true,
+                shiftId: true,
                 isActive: true,
-                createdAt: true
+                createdAt: true,
+                shift: {
+                    select: {
+                        id: true,
+                        name: true,
+                        checkInTime: true,
+                        checkOutTime: true
+                    }
+                }
             },
             orderBy: {
-                createdAt: 'desc' // Urutkan dari yang paling baru ditambahkan
+                createdAt: 'desc'
             }
         });
 
@@ -36,10 +44,9 @@ router.get('/', async (req, res) => {
 // 2. POST /api/users/create (Tambah user baru)
 // ==========================================
 router.post('/create', async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, department, shiftId } = req.body;
 
     try {
-        // Cek apakah email sudah dipakai
         const existingUser = await prisma.user.findFirst({
             where: { email: email }
         });
@@ -48,7 +55,6 @@ router.post('/create', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Email sudah terdaftar.' });
         }
 
-        // Enkripsi password sebelum disimpan ke database
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const newUser = await prisma.user.create({
@@ -56,7 +62,9 @@ router.post('/create', async (req, res) => {
                 name,
                 email,
                 password: hashedPassword,
-                role: role || 'EMPLOYEE', // Default ke EMPLOYEE jika tidak diisi
+                role: role || 'EMPLOYEE',
+                department: department || null,
+                shiftId: shiftId ? parseInt(shiftId) : null,
             }
         });
 
@@ -67,47 +75,49 @@ router.post('/create', async (req, res) => {
                 id: newUser.id,
                 name: newUser.name,
                 email: newUser.email,
-                role: newUser.role
+                role: newUser.role,
+                department: newUser.department,
+                shiftId: newUser.shiftId
             }
         });
     } catch (error) {
         console.error('[GAGAL] Menambahkan user baru:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
-}); // <-- Batas akhir router.post('/create') yang benar
+});
 
 // ==========================================
 // 3. PUT /api/users/:id (Edit data user)
 // ==========================================
 router.put('/:id', async (req, res) => {
     const { id } = req.params;
-    const { name, email, password, role, isActive } = req.body;
+    const numericId = parseInt(id); // Pastikan ID berupa integer jika database menggunakan AutoIncrement Int
+    const { name, email, password, role, department, shiftId, isActive } = req.body;
 
     try {
-        // Cek apakah user ada
         const userExist = await prisma.user.findUnique({
-            where: { id: id }
+            where: { id: numericId }
         });
 
         if (!userExist) {
             return res.status(404).json({ success: false, message: 'User tidak ditemukan.' });
         }
 
-        // Siapkan data yang akan diupdate
         let updateData = {
             name,
             email,
             role,
+            department: department || null,
+            shiftId: shiftId ? parseInt(shiftId) : null,
             isActive
         };
 
-        // Jika password diisi (tidak kosong), enkripsi ulang password baru
         if (password && password.trim() !== '') {
             updateData.password = await bcrypt.hash(password, 10);
         }
 
         const updatedUser = await prisma.user.update({
-            where: { id: id },
+            where: { id: numericId },
             data: updateData,
         });
 
@@ -118,7 +128,9 @@ router.put('/:id', async (req, res) => {
                 id: updatedUser.id,
                 name: updatedUser.name,
                 email: updatedUser.email,
-                role: updatedUser.role
+                role: updatedUser.role,
+                department: updatedUser.department,
+                shiftId: updatedUser.shiftId
             }
         });
 
@@ -126,6 +138,6 @@ router.put('/:id', async (req, res) => {
         console.error('[GAGAL] Memperbarui user:', error);
         res.status(500).json({ success: false, message: 'Internal server error' });
     }
-}); // <-- Batas akhir router.put('/:id')
+});
 
 module.exports = router;

@@ -6,7 +6,6 @@ class ApiService {
   // Ganti dengan IP address laptop Anda yang terhubung ke jaringan yang sama
   static const String baseUrl = 'http://192.168.8.110:5005';
 
-
   // ==========================================
   // FUNGSI AUTHENTICATION (LOGIN)
   // ==========================================
@@ -61,9 +60,9 @@ class ApiService {
   }
 
   // ==========================================
-  // FUNGSI UNTUK MENAMBAH USER BARU
+  // FUNGSI UNTUK MENAMBAH USER BARU (DENGAN SHIFT & DEPARTEMEN)
   // ==========================================
-  static Future<bool> createUser(String name, String email, String password, String role) async {
+  static Future<bool> createUser(String name, String email, String password, String role, String department, int? shiftId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
@@ -78,6 +77,8 @@ class ApiService {
         'email': email,
         'password': password,
         'role': role,
+        'department': department,
+        'shiftId': shiftId,
       }),
     );
 
@@ -85,9 +86,9 @@ class ApiService {
   }
 
   // ==========================================
-  // FUNGSI UNTUK UPDATE USER (YANG KURANG)
+  // FUNGSI UNTUK UPDATE USER
   // ==========================================
-  static Future<bool> updateUser(String id, String name, String email, String password, String role) async {
+  static Future<bool> updateUser(String id, String name, String email, String password, String role, String department, int? shiftId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
@@ -95,6 +96,8 @@ class ApiService {
       'name': name,
       'email': email,
       'role': role,
+      'department': department,
+      'shiftId': shiftId,
     };
     
     // Kirim password hanya jika diisi (tidak kosong)
@@ -122,7 +125,8 @@ class ApiService {
     await prefs.remove('token');
     await prefs.remove('role');
   }
-// ==========================================
+
+  // ==========================================
   // AMBIL PENGATURAN LOKASI KANTOR
   // ==========================================
   static Future<Map<String, dynamic>> getOfficeLocation() async {
@@ -169,8 +173,26 @@ class ApiService {
     return response.statusCode == 200;
   }
 
+  // ==========================================
+  // FUNGSI UNTUK MENGAMBIL DAFTAR SHIFT
+  // ==========================================
+  static Future<List<dynamic>> getShifts() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
 
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/shifts'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
 
-
-
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      throw Exception('Gagal memuat data shift');
+    }
+  }
 }
