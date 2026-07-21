@@ -1,18 +1,21 @@
 const jwt = require('jsonwebtoken');
 
-module.exports = function authMiddleware(req, res, next) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
 
-  if (!token) {
-    return res.status(401).json({ status: 'error', message: 'Access token required' });
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, message: 'Akses ditolak. Token tidak ditemukan.' });
   }
+
+  const token = authHeader.split(' ')[1];
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'kunci_rahasia_cadangan_123');
+    req.user = decoded; // Menyimpan data userId dan role untuk digunakan di rute selanjutnya
     next();
-  } catch (err) {
-    return res.status(403).json({ status: 'error', message: 'Invalid or expired token' });
+  } catch (error) {
+    return res.status(403).json({ success: false, message: 'Token tidak valid atau kedaluwarsa.' });
   }
 };
+
+module.exports = verifyToken;
