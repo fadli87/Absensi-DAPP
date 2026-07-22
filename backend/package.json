@@ -32,4 +32,9 @@
   "prisma": {
     "seed": "node prisma/seed.js"
   }
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "postinstall": "prisma generate"
+  }
 }

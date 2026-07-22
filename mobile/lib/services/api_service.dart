@@ -479,4 +479,25 @@ class ApiService {
 
     return response.statusCode == 200;
   }
+  // ==========================================
+  // FUNGSI DASHBOARD RINGKASAN HARIAN
+  // ==========================================
+  static Future<Map<String, dynamic>> getDashboardSummary() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/dashboard/summary'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      throw Exception('Gagal memuat ringkasan dashboard');
+    }
+  }
+
+
 }

@@ -9,6 +9,8 @@ import 'department_management_screen.dart';
 import 'report_screen.dart';
 import 'my_attendance_history_screen.dart';
 import 'admin_leave_approval_screen.dart';
+import 'admin_dashboard_summary_screen.dart';
+import 'leave_screen.dart';
 
 class AdminResponsiveLayout extends StatefulWidget {
   const AdminResponsiveLayout({Key? key}) : super(key: key);
@@ -21,14 +23,16 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
   int _selectedIndex = 0;
 
   final List<String> _menuTitles = [
-    'Manajemen Pegawai',
-    'Pengaturan Geofencing',
-    'Pengaturan Shift',
-    'Pengaturan Departemen',
-    'Laporan Absensi',
-    'Riwayat Absensi Saya',
-    'Persetujuan Cuti',
-  ];
+  'Dashboard',
+  'Manajemen Pegawai',
+  'Pengaturan Geofencing',
+  'Pengaturan Shift',
+  'Pengaturan Departemen',
+  'Laporan Absensi',
+  'Riwayat Absensi Saya',
+  'Persetujuan Cuti',
+  'Ajukan Cuti Saya',
+];
 
   @override
   Widget build(BuildContext context) {
@@ -59,14 +63,16 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                   ),
                   Divider(color: Colors.white24, height: 1),
                   SizedBox(height: 10),
-                  _buildSidebarItem(Icons.people, 'Manajemen Pegawai', 0),
-                  _buildSidebarItem(Icons.map, 'Pengaturan Geofencing', 1),
-                  _buildSidebarItem(Icons.schedule, 'Pengaturan Shift', 2),
-                  _buildSidebarItem(Icons.business, 'Pengaturan Departemen', 3),
-                  _buildSidebarItem(Icons.bar_chart, 'Laporan Absensi', 4),
-                  _buildSidebarItem(Icons.history, 'Riwayat Absensi Saya', 5),
-                  _buildSidebarItem(Icons.event_note, 'Persetujuan Cuti', 6),
-                  
+                  _buildSidebarItem(Icons.dashboard, 'Dashboard', 0),
+                  _buildSidebarItem(Icons.people, 'Manajemen Pegawai', 1),
+                  _buildSidebarItem(Icons.map, 'Pengaturan Geofencing', 2),
+                  _buildSidebarItem(Icons.schedule, 'Pengaturan Shift', 3),
+                  _buildSidebarItem(Icons.business, 'Pengaturan Departemen', 4),
+                  _buildSidebarItem(Icons.bar_chart, 'Laporan Absensi', 5),
+                  _buildSidebarItem(Icons.history, 'Riwayat Absensi Saya', 6),
+                  _buildSidebarItem(Icons.event_note, 'Persetujuan Cuti', 7),
+                  _buildSidebarItem(Icons.assignment_ind, 'Ajukan Cuti Saya', 8),
+                                    
                   Divider(color: Colors.white24, height: 20),
                   
                   ListTile(
@@ -156,69 +162,87 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                 ],
               ),
             ),
-            ListTile(
-              leading: Icon(Icons.people),
-              title: Text('Manajemen Pegawai'),
-              selected: _selectedIndex == 0,
-              onTap: () {
-                setState(() => _selectedIndex = 0);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.map),
-              title: Text('Pengaturan Geofencing'),
-              selected: _selectedIndex == 1,
-              onTap: () {
-                setState(() => _selectedIndex = 1);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.schedule),
-              title: Text('Pengaturan Shift'),
-              selected: _selectedIndex == 2,
-              onTap: () {
-                setState(() => _selectedIndex = 2);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.business),
-              title: Text('Pengaturan Departemen'),
-              selected: _selectedIndex == 3,
-              onTap: () {
-                setState(() => _selectedIndex = 3);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.bar_chart),
-              title: Text('Laporan Absensi'),
-              selected: _selectedIndex == 4,
-              onTap: () {
-                setState(() => _selectedIndex = 4);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.history),
-              title: Text('Riwayat Absensi Saya'),
-              selected: _selectedIndex == 5,
-              onTap: () {
-                setState(() => _selectedIndex = 5);
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
-              leading: Icon(Icons.event_note),
-              title: Text('Persetujuan Cuti'),
-              selected: _selectedIndex == 6,
-              onTap: () {
-                setState(() => _selectedIndex = 6);
-                Navigator.pop(context);
-              },
-            ),
+              ListTile(
+                leading: Icon(Icons.dashboard),
+                title: Text('Dashboard'),
+                selected: _selectedIndex == 0,
+                onTap: () {
+                  setState(() => _selectedIndex = 0);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.people),
+                title: Text('Manajemen Pegawai'),
+                selected: _selectedIndex == 1,
+                onTap: () {
+                  setState(() => _selectedIndex = 1);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.map),
+                title: Text('Pengaturan Geofencing'),
+                selected: _selectedIndex == 2,
+                onTap: () {
+                  setState(() => _selectedIndex = 2);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.schedule),
+                title: Text('Pengaturan Shift'),
+                selected: _selectedIndex == 3,
+                onTap: () {
+                  setState(() => _selectedIndex = 3);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.business),
+                title: Text('Pengaturan Departemen'),
+                selected: _selectedIndex == 4,
+                onTap: () {
+                  setState(() => _selectedIndex = 4);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.bar_chart),
+                title: Text('Laporan Absensi'),
+                selected: _selectedIndex == 5,
+                onTap: () {
+                  setState(() => _selectedIndex = 5);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.history),
+                title: Text('Riwayat Absensi Saya'),
+                selected: _selectedIndex == 6,
+                onTap: () {
+                  setState(() => _selectedIndex = 6);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.event_note),
+                title: Text('Persetujuan Cuti'),
+                selected: _selectedIndex == 7,
+                onTap: () {
+                  setState(() => _selectedIndex = 7);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.assignment_ind),
+                title: Text('Ajukan Cuti Saya'),
+                selected: _selectedIndex == 8,
+                onTap: () {
+                  setState(() => _selectedIndex = 8);
+                  Navigator.pop(context);
+                },
+              ),
             Divider(color: Colors.grey[300]),
             ListTile(
               leading: Icon(Icons.camera_alt, color: Color(0xFF2563EB)),
@@ -264,25 +288,27 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
   }
 
   Widget _buildActiveContent() {
-    if (_selectedIndex == 0) {
-      return AdminEmployeeListView();
-    } else if (_selectedIndex == 1) {
-      return GeofencingSettingsView();
-    } else if (_selectedIndex == 2) {
-      return ShiftManagementScreen();
-    } else if (_selectedIndex == 3) {
-      return DepartmentManagementScreen();
-    } else if (_selectedIndex == 4) {
-      return ReportScreen();
-    } else if (_selectedIndex == 5) {
-      return MyAttendanceHistoryScreen();
-    } else if (_selectedIndex == 6) {
-      return AdminLeaveApprovalScreen();
-    }
-    return AdminEmployeeListView();
+      if (_selectedIndex == 0) {
+        return AdminDashboardSummaryScreen();
+      } else if (_selectedIndex == 1) {
+        return AdminEmployeeListView();
+      } else if (_selectedIndex == 2) {
+        return GeofencingSettingsView();
+      } else if (_selectedIndex == 3) {
+        return ShiftManagementScreen();
+      } else if (_selectedIndex == 4) {
+        return DepartmentManagementScreen();
+      } else if (_selectedIndex == 5) {
+        return ReportScreen();
+      } else if (_selectedIndex == 6) {
+        return MyAttendanceHistoryScreen();
+      } else if (_selectedIndex == 7) {
+        return AdminLeaveApprovalScreen();
+      } else {
+        return LeaveScreen();
+      }
   }
 }
-
 // ================= DAFTAR PEGAWAI VERSI LIST CARD =================
 class AdminEmployeeListView extends StatefulWidget {
   const AdminEmployeeListView({Key? key}) : super(key: key);
