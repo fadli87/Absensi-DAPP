@@ -19,4 +19,13 @@ const verifyToken = (req, res, next) => {
   }
 };
 
+const isAdmin = (req, res, next) => {
+  if (req.user?.role !== 'ADMIN') {
+    return res.status(403).json({ success: false, message: 'Akses ditolak. Hanya admin yang diizinkan.' });
+  }
+  next();
+};
+
 module.exports = verifyToken;
+module.exports.verifyToken = verifyToken;
+module.exports.isAdmin = isAdmin;

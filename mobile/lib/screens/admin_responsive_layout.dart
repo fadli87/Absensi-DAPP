@@ -3,10 +3,12 @@ import '../services/api_service.dart';
 import 'add_employee_screen.dart';
 import 'edit_employee_screen.dart';
 import 'login_screen.dart';
-import 'dashboard_screen.dart'; // <-- Diperlukan untuk mengakses halaman absen pegawai
-import 'shift_management_screen.dart'; // <-- Halaman manajemen shift baru
+import 'dashboard_screen.dart'; 
+import 'shift_management_screen.dart'; 
 import 'department_management_screen.dart';
 import 'report_screen.dart';
+import 'my_attendance_history_screen.dart';
+import 'admin_leave_approval_screen.dart';
 
 class AdminResponsiveLayout extends StatefulWidget {
   const AdminResponsiveLayout({Key? key}) : super(key: key);
@@ -21,10 +23,11 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
   final List<String> _menuTitles = [
     'Manajemen Pegawai',
     'Pengaturan Geofencing',
-    'Pengaturan Shift', // <-- Menu baru untuk shift
+    'Pengaturan Shift',
     'Pengaturan Departemen',
     'Laporan Absensi',
-
+    'Riwayat Absensi Saya',
+    'Persetujuan Cuti',
   ];
 
   @override
@@ -32,10 +35,8 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
     bool isDesktop = MediaQuery.of(context).size.width >= 850;
 
     if (isDesktop) {
-      // Jika di Desktop, gunakan Layout Sidebar Kiri
       return _buildDesktopLayout();
     } else {
-      // Jika di HP/Mobile, gunakan tampilan Drawer & List yang ramah layar kecil
       return _buildMobileLayout();
     }
   }
@@ -45,7 +46,6 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
     return Scaffold(
       body: Row(
         children: [
-          // MEMPERBAIKI ERROR LISTTILE: Ganti Container menjadi Material
           Material(
             color: Color(0xFF0F172A),
             child: SizedBox(
@@ -62,11 +62,13 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                   _buildSidebarItem(Icons.people, 'Manajemen Pegawai', 0),
                   _buildSidebarItem(Icons.map, 'Pengaturan Geofencing', 1),
                   _buildSidebarItem(Icons.schedule, 'Pengaturan Shift', 2),
-                  _buildSidebarItem(Icons.business, 'Pengaturan Departemen', 3), // Hapus komentar ini jika Anda sudah buat menu Departemen
-                  _buildSidebarItem(Icons.report, 'Laporan Absensi', 4),
+                  _buildSidebarItem(Icons.business, 'Pengaturan Departemen', 3),
+                  _buildSidebarItem(Icons.bar_chart, 'Laporan Absensi', 4),
+                  _buildSidebarItem(Icons.history, 'Riwayat Absensi Saya', 5),
+                  _buildSidebarItem(Icons.event_note, 'Persetujuan Cuti', 6),
+                  
                   Divider(color: Colors.white24, height: 20),
                   
-                  // Pintas Menu Absensi untuk Admin di Desktop
                   ListTile(
                     leading: Icon(Icons.camera_alt, color: Colors.blueAccent),
                     title: Text('Menu Absensi Saya', style: TextStyle(color: Colors.white, fontSize: 14)),
@@ -120,6 +122,7 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
       ),
     );
   }
+
   // ================= TAMPILAN MOBILE (HP) =================
   Widget _buildMobileLayout() {
     return Scaffold(
@@ -180,8 +183,6 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                 Navigator.pop(context);
               },
             ),
-            Divider(color: Colors.grey[300]),
-            // === TAMBAHKAN MENU DEPARTEMEN DI SINI ===
             ListTile(
               leading: Icon(Icons.business),
               title: Text('Pengaturan Departemen'),
@@ -191,7 +192,6 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                 Navigator.pop(context);
               },
             ),
-            // === TAMBAHKAN MENU LAPORAN DI SINI ===
             ListTile(
               leading: Icon(Icons.bar_chart),
               title: Text('Laporan Absensi'),
@@ -201,19 +201,31 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                 Navigator.pop(context);
               },
             ),
-            // =========================================
+            ListTile(
+              leading: Icon(Icons.history),
+              title: Text('Riwayat Absensi Saya'),
+              selected: _selectedIndex == 5,
+              onTap: () {
+                setState(() => _selectedIndex = 5);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              leading: Icon(Icons.event_note),
+              title: Text('Persetujuan Cuti'),
+              selected: _selectedIndex == 6,
+              onTap: () {
+                setState(() => _selectedIndex = 6);
+                Navigator.pop(context);
+              },
+            ),
             Divider(color: Colors.grey[300]),
-            
-            // Pintas Menu Absensi Khusus Admin di Drawer HP
             ListTile(
               leading: Icon(Icons.camera_alt, color: Color(0xFF2563EB)),
-              title: Text(
-                'Menu Absensi Saya', 
-                style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)
-              ),
+              title: Text('Menu Absensi Saya', style: TextStyle(color: Color(0xFF2563EB), fontWeight: FontWeight.bold)),
               subtitle: Text('Check-In / Check-Out (Selfie + GPS)', style: TextStyle(fontSize: 11)),
               onTap: () {
-                Navigator.pop(context); // Tutup drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => DashboardScreen()),
@@ -253,16 +265,21 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
 
   Widget _buildActiveContent() {
     if (_selectedIndex == 0) {
-      return AdminEmployeeListView(); // Tampilan List Pegawai yang ramah HP/Desktop
+      return AdminEmployeeListView();
     } else if (_selectedIndex == 1) {
-      return GeofencingSettingsView(); // Form Geofencing
+      return GeofencingSettingsView();
     } else if (_selectedIndex == 2) {
-      return ShiftManagementScreen(); // Halaman Shift Kerja baru
+      return ShiftManagementScreen();
     } else if (_selectedIndex == 3) {
-      return DepartmentManagementScreen(); // Halaman Departemen baru
-    } else {
-      return ReportScreen(); // Halaman Laporan Absensi
+      return DepartmentManagementScreen();
+    } else if (_selectedIndex == 4) {
+      return ReportScreen();
+    } else if (_selectedIndex == 5) {
+      return MyAttendanceHistoryScreen();
+    } else if (_selectedIndex == 6) {
+      return AdminLeaveApprovalScreen();
     }
+    return AdminEmployeeListView();
   }
 }
 

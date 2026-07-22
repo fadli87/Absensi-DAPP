@@ -10,6 +10,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_service.dart';
 import '../utils/constants.dart';
 import 'login_screen.dart';
+import 'my_attendance_history_screen.dart';
+import 'leave_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -222,17 +224,97 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Absensi DAPP Mobile', style: TextStyle(fontWeight: FontWeight.bold)),
-        backgroundColor: Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: _handleLogout,
-          )
-        ],
-      ),
+  appBar: AppBar(
+    title: Text('Absensi DAPP Mobile', style: TextStyle(fontWeight: FontWeight.bold)),
+    backgroundColor: Color(0xFF2563EB),
+    foregroundColor: Colors.white,
+    actions: [
+      IconButton(
+        icon: Icon(Icons.logout),
+        onPressed: _handleLogout,
+      )
+    ],
+  ),
+  drawer: Drawer(
+    child: ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        DrawerHeader(
+          decoration: BoxDecoration(color: Color(0xFF2563EB)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              Text('Absensi DAPP', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold)),
+              SizedBox(height: 4),
+              Text('Menu Pegawai', style: TextStyle(color: Colors.white70, fontSize: 14)),
+            ],
+          ),
+        ),
+        ListTile(
+          leading: Icon(Icons.camera_alt, color: Color(0xFF2563EB)),
+          title: Text('Absen (Check-In/Out)'),
+          onTap: () => Navigator.pop(context),
+        ),
+        ListTile(
+          leading: Icon(Icons.history),
+          title: Text('Riwayat Absensi Saya'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Scaffold(
+                  appBar: AppBar(
+                    title: Text('Riwayat Absensi Saya'),
+                    backgroundColor: Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
+                  body: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: MyAttendanceHistoryScreen(),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        ListTile(
+          leading: Icon(Icons.event_note),
+          title: Text('Ajukan Cuti/Izin'),
+          onTap: () {
+            Navigator.pop(context);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Scaffold(
+                  appBar: AppBar(
+                    title: Text('Cuti / Izin'),
+                    backgroundColor: Color(0xFF2563EB),
+                    foregroundColor: Colors.white,
+                  ),
+                  body: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: LeaveScreen(),
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        Divider(),
+        ListTile(
+          leading: Icon(Icons.logout, color: Colors.redAccent),
+          title: Text('Keluar', style: TextStyle(color: Colors.redAccent)),
+          onTap: () {
+            Navigator.pop(context);
+            _handleLogout();
+          },
+        ),
+      ],
+    ),
+  ),
+  
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.0),
         child: Column(

@@ -50,6 +50,8 @@ model User {
   password     String
   role         Role     @default(EMPLOYEE)
   isActive     Boolean  @default(true)
+
+  leaveRequests LeaveRequest[]
   
   // INI BAGIAN YANG BARU KITA UBAH (Relasi ke Departemen)
   departmentId Int?     
@@ -92,4 +94,19 @@ model OfficeLocation {
   longitude Float    
   radius    Int      
   updatedAt DateTime @updatedAt
+}
+
+model LeaveRequest {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  startDate    DateTime
+  endDate      DateTime
+  reason       String
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  adminNotes   String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("leave_requests")
 }

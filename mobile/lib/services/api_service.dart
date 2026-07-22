@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Ganti dengan IP address laptop Anda yang terhubung ke jaringan yang sama
-  static const String baseUrl = 'http://192.168.1.4:5005';  //'http://192.168.8.110:5005';
+  static const String baseUrl = 'http://192.168.67.222:5005';  //'http://192.168.8.110:5005';
 
   // ==========================================
   // FUNGSI AUTHENTICATION (LOGIN)
@@ -195,6 +195,7 @@ class ApiService {
     } else {
       throw Exception('Gagal memuat data shift');
     }
+
   }
 
   static Future<bool> createShift(String name, String checkInTime, String checkOutTime, int toleranceMinutes) async {
@@ -363,5 +364,119 @@ class ApiService {
     await file.writeAsBytes(response.bodyBytes);
 
     return filePath;
+  }
+
+  // ==========================================
+  // FUNGSI RIWAYAT ABSENSI SAYA (Employee & Admin)
+  // ==========================================
+  static Future<List<dynamic>> getMyHistory() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/attendance/my-history'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      throw Exception('Gagal memuat riwayat absensi');
+    }
+  }
+
+  // ==========================================
+  // FITUR CUTI / IZIN (LEAVE REQUESTS)
+  // ==========================================
+
+  // Mengajukan cuti atau izin baru
+  static Future<bool> createLeaveRequest(String startDate, String endDate, String reason) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/leaves'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'startDate': startDate,
+        'endDate': endDate,
+        'reason': reason,
+      }),
+    );
+
+    return response.statusCode == 201;
+  }
+
+  // Mengambil riwayat cuti milik user yang sedang login
+  static Future<List<dynamic>> getMyLeaveRequests() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/leaves/my'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      throw Exception('Gagal memuat riwayat cuti/izin');
+    }
+  }
+
+  // (Khusus Admin) Mengambil semua pengajuan cuti karyawan
+  static Future<List<dynamic>> getAllLeaveRequests() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/leaves/admin/all'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      print('=== ERROR LEAVE (ADMIN ALL) ===');
+      print('Status Code: ${response.statusCode}');
+      print('Body: ${response.body}');
+      print('================================');
+      throw Exception('Gagal memuat data pengajuan cuti');
+    }
+  }
+
+  // (Khusus Admin) Menyetujui atau menolak cuti
+  static Future<bool> updateLeaveStatus(int id, String status, String? adminNotes) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/leaves/admin/$id/status'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'status': status, // 'APPROVED' atau 'REJECTED'
+        'adminNotes': adminNotes,
+      }),
+    );
+
+    return response.statusCode == 200;
   }
 }
