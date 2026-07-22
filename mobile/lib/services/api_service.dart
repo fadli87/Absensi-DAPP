@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -282,5 +284,84 @@ class ApiService {
       body: jsonEncode({'name': name}),
     );
     return response.statusCode == 200;
+  }
+  // ==========================================
+  // FUNGSI LAPORAN / REPORT
+  // ==========================================
+
+  // Ambil data laporan (JSON) untuk ditampilkan di tabel
+  static Future<Map<String, dynamic>> getAttendanceReport({
+    required String startDate,
+    required String endDate,
+    int? departmentId,
+    int? userId,
+    String? status,
+  }) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final queryParams = {
+      'startDate': startDate,
+      'endDate': endDate,
+      if (departmentId != null) 'departmentId': departmentId.toString(),
+      if (userId != null) 'userId': userId.toString(),
+      if (status != null) 'status': status,
+    };
+
+    final uri = Uri.parse('$baseUrl/api/reports/attendance').replace(queryParameters: queryParams);
+
+    final response = await http.get(
+      uri,
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      throw Exception('Gagal memuat data laporan');
+    }
+  }
+
+  // Download file laporan (Excel atau PDF), return path file lokal
+  static Future<String> downloadReportFile({
+    required String format, // 'excel' atau 'pdf'
+    required String startDate,
+    required String endDate,
+    int? departmentId,
+    int? userId,
+    String? status,
+  }) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final queryParams = {
+      'startDate': startDate,
+      'endDate': endDate,
+      if (departmentId != null) 'departmentId': departmentId.toString(),
+      if (userId != null) 'userId': userId.toString(),
+      if (status != null) 'status': status,
+    };
+
+    final uri = Uri.parse('$baseUrl/api/reports/attendance/export/$format').replace(queryParameters: queryParams);
+
+    final response = await http.get(
+      uri,
+      headers: {'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Gagal mengunduh laporan');
+    }
+
+    final dir = await getApplicationDocumentsDirectory();
+    final extension = format == 'excel' ? 'xlsx' : 'pdf';
+    final fileName = 'laporan_absensi_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final filePath = '${dir.path}\\$fileName';
+
+    final file = File(filePath);
+    await file.writeAsBytes(response.bodyBytes);
+
+    return filePath;
   }
 }

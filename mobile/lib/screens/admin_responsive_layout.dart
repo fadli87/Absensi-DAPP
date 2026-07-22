@@ -6,6 +6,7 @@ import 'login_screen.dart';
 import 'dashboard_screen.dart'; // <-- Diperlukan untuk mengakses halaman absen pegawai
 import 'shift_management_screen.dart'; // <-- Halaman manajemen shift baru
 import 'department_management_screen.dart';
+import 'report_screen.dart';
 
 class AdminResponsiveLayout extends StatefulWidget {
   const AdminResponsiveLayout({Key? key}) : super(key: key);
@@ -21,7 +22,8 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
     'Manajemen Pegawai',
     'Pengaturan Geofencing',
     'Pengaturan Shift', // <-- Menu baru untuk shift
-    'Pengaturan Departemen'
+    'Pengaturan Departemen',
+    'Laporan Absensi',
 
   ];
 
@@ -61,7 +63,7 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                   _buildSidebarItem(Icons.map, 'Pengaturan Geofencing', 1),
                   _buildSidebarItem(Icons.schedule, 'Pengaturan Shift', 2),
                   _buildSidebarItem(Icons.business, 'Pengaturan Departemen', 3), // Hapus komentar ini jika Anda sudah buat menu Departemen
-                  
+                  _buildSidebarItem(Icons.report, 'Laporan Absensi', 4),
                   Divider(color: Colors.white24, height: 20),
                   
                   // Pintas Menu Absensi untuk Admin di Desktop
@@ -189,6 +191,16 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                 Navigator.pop(context);
               },
             ),
+            // === TAMBAHKAN MENU LAPORAN DI SINI ===
+            ListTile(
+              leading: Icon(Icons.bar_chart),
+              title: Text('Laporan Absensi'),
+              selected: _selectedIndex == 4,
+              onTap: () {
+                setState(() => _selectedIndex = 4);
+                Navigator.pop(context);
+              },
+            ),
             // =========================================
             Divider(color: Colors.grey[300]),
             
@@ -246,8 +258,10 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
       return GeofencingSettingsView(); // Form Geofencing
     } else if (_selectedIndex == 2) {
       return ShiftManagementScreen(); // Halaman Shift Kerja baru
-    } else {
+    } else if (_selectedIndex == 3) {
       return DepartmentManagementScreen(); // Halaman Departemen baru
+    } else {
+      return ReportScreen(); // Halaman Laporan Absensi
     }
   }
 }
