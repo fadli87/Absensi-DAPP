@@ -1,13 +1,14 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const prisma = require('../lib/prisma');
+const verifyToken = require('../middleware/auth'); // <-- Pastikan middleware auth diimpor
 
 const router = express.Router();
 
 // ==========================================
 // 1. GET /api/users (Ambil daftar semua user + Shift & Departemen)
 // ==========================================
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const users = await prisma.user.findMany({
             select: {
@@ -15,10 +16,16 @@ router.get('/', async (req, res) => {
                 name: true,
                 email: true,
                 role: true,
-                department: true,
+                departmentId: true,
                 shiftId: true,
                 isActive: true,
                 createdAt: true,
+                department: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                },
                 shift: {
                     select: {
                         id: true,
@@ -43,8 +50,8 @@ router.get('/', async (req, res) => {
 // ==========================================
 // 2. POST /api/users/create (Tambah user baru)
 // ==========================================
-router.post('/create', async (req, res) => {
-    const { name, email, password, role, department, shiftId } = req.body;
+router.post('/create', verifyToken, async (req, res) => {
+    const { name, email, password, role, departmentId, shiftId } = req.body;
 
     try {
         const existingUser = await prisma.user.findFirst({
@@ -63,7 +70,7 @@ router.post('/create', async (req, res) => {
                 email,
                 password: hashedPassword,
                 role: role || 'EMPLOYEE',
-                department: department || null,
+                departmentId: departmentId ? parseInt(departmentId) : null,
                 shiftId: shiftId ? parseInt(shiftId) : null,
             }
         });
@@ -76,7 +83,7 @@ router.post('/create', async (req, res) => {
                 name: newUser.name,
                 email: newUser.email,
                 role: newUser.role,
-                department: newUser.department,
+                departmentId: newUser.departmentId,
                 shiftId: newUser.shiftId
             }
         });
@@ -89,10 +96,10 @@ router.post('/create', async (req, res) => {
 // ==========================================
 // 3. PUT /api/users/:id (Edit data user)
 // ==========================================
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
     const { id } = req.params;
-    const numericId = parseInt(id); // Pastikan ID berupa integer jika database menggunakan AutoIncrement Int
-    const { name, email, password, role, department, shiftId, isActive } = req.body;
+    const numericId = parseInt(id);
+    const { name, email, password, role, departmentId, shiftId, isActive } = req.body;
 
     try {
         const userExist = await prisma.user.findUnique({
@@ -107,7 +114,7 @@ router.put('/:id', async (req, res) => {
             name,
             email,
             role,
-            department: department || null,
+            departmentId: departmentId ? parseInt(departmentId) : null,
             shiftId: shiftId ? parseInt(shiftId) : null,
             isActive
         };
@@ -129,7 +136,7 @@ router.put('/:id', async (req, res) => {
                 name: updatedUser.name,
                 email: updatedUser.email,
                 role: updatedUser.role,
-                department: updatedUser.department,
+                departmentId: updatedUser.departmentId,
                 shiftId: updatedUser.shiftId
             }
         });

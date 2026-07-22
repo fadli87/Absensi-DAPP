@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
   // Ganti dengan IP address laptop Anda yang terhubung ke jaringan yang sama
-  static const String baseUrl = 'http://192.168.8.110:5005';
+  static const String baseUrl = 'http://192.168.1.4:5005';  //'http://192.168.8.110:5005';
 
   // ==========================================
   // FUNGSI AUTHENTICATION (LOGIN)
@@ -37,6 +37,15 @@ class ApiService {
   }
 
   // ==========================================
+  // FUNGSI LOGOUT
+  // ==========================================
+  Future<void> logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
+    await prefs.remove('role');
+  }
+
+  // ==========================================
   // FUNGSI UNTUK MENGAMBIL DAFTAR USER
   // ==========================================
   static Future<List<dynamic>> getUsers() async {
@@ -60,9 +69,9 @@ class ApiService {
   }
 
   // ==========================================
-  // FUNGSI UNTUK MENAMBAH USER BARU (DENGAN SHIFT & DEPARTEMEN)
+  // FUNGSI UNTUK MENAMBAH USER BARU
   // ==========================================
-  static Future<bool> createUser(String name, String email, String password, String role, String department, int? shiftId) async {
+  static Future<bool> createUser(String name, String email, String password, String role, int? departmentId, int? shiftId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
@@ -77,7 +86,7 @@ class ApiService {
         'email': email,
         'password': password,
         'role': role,
-        'department': department,
+        'departmentId': departmentId,
         'shiftId': shiftId,
       }),
     );
@@ -88,7 +97,7 @@ class ApiService {
   // ==========================================
   // FUNGSI UNTUK UPDATE USER
   // ==========================================
-  static Future<bool> updateUser(String id, String name, String email, String password, String role, String department, int? shiftId) async {
+  static Future<bool> updateUser(String id, String name, String email, String password, String role, int? departmentId, int? shiftId) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String? token = prefs.getString('token');
 
@@ -96,11 +105,10 @@ class ApiService {
       'name': name,
       'email': email,
       'role': role,
-      'department': department,
+      'departmentId': departmentId,
       'shiftId': shiftId,
     };
     
-    // Kirim password hanya jika diisi (tidak kosong)
     if (password.isNotEmpty) {
       bodyData['password'] = password;
     }
@@ -115,15 +123,6 @@ class ApiService {
     );
 
     return response.statusCode == 200;
-  }
-
-  // ==========================================
-  // FUNGSI LOGOUT
-  // ==========================================
-  Future<void> logout() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('token');
-    await prefs.remove('role');
   }
 
   // ==========================================
@@ -174,7 +173,7 @@ class ApiService {
   }
 
   // ==========================================
-  // FUNGSI UNTUK MENGAMBIL DAFTAR SHIFT
+  // FUNGSI SHIFT KERJA
   // ==========================================
   static Future<List<dynamic>> getShifts() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -194,5 +193,94 @@ class ApiService {
     } else {
       throw Exception('Gagal memuat data shift');
     }
+  }
+
+  static Future<bool> createShift(String name, String checkInTime, String checkOutTime, int toleranceMinutes) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/shifts'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'name': name,
+        'checkInTime': checkInTime,
+        'checkOutTime': checkOutTime,
+        'toleranceMinutes': toleranceMinutes,
+      }),
+    );
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  static Future<bool> updateShift(int id, String name, String checkInTime, String checkOutTime, int toleranceMinutes) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/shifts/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'name': name,
+        'checkInTime': checkInTime,
+        'checkOutTime': checkOutTime,
+        'toleranceMinutes': toleranceMinutes,
+      }),
+    );
+    return response.statusCode == 200;
+  }
+
+  // ==========================================
+  // FUNGSI DEPARTEMEN
+  // ==========================================
+  static Future<List<dynamic>> getDepartments() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/departments'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['data'];
+    } else {
+      // INI KUNCI UTAMANYA: Kita cetak error dari backend ke terminal
+      print('=== ERROR DEPARTEMEN ===');
+      print('Status Code: ${response.statusCode}');
+      print('Body: ${response.body}');
+      print('========================');
+      throw Exception('Gagal memuat data departemen');
+    }
+  }
+
+  static Future<bool> createDepartment(String name) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/departments'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'name': name}),
+    );
+    return response.statusCode == 200 || response.statusCode == 201;
+  }
+
+  static Future<bool> updateDepartment(int id, String name) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? token = prefs.getString('token');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/api/departments/$id'),
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer $token'},
+      body: jsonEncode({'name': name}),
+    );
+    return response.statusCode == 200;
   }
 }

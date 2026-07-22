@@ -14,6 +14,7 @@ const verifyToken = (req, res, next) => {
     req.user = decoded; // Menyimpan data userId dan role untuk digunakan di rute selanjutnya
     next();
   } catch (error) {
+    console.error('[AUTH GAGAL!]', error.message);
     return res.status(403).json({ success: false, message: 'Token tidak valid atau kedaluwarsa.' });
   }
 };

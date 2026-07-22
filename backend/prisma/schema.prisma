@@ -3,7 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // Sesuaikan dengan provider database Anda (sqlite/postgresql/mysql)
+  provider = "postgresql" // Anda menggunakan Supabase PostgreSQL
+  
 }
 
 enum Role {
@@ -19,17 +20,27 @@ enum AttendanceStatus {
   ABSENT
 }
 
-// Model Shift Kerja untuk pengaturan jam masuk, pulang, dan toleransi keterlambatan
+// Model Master Departemen yang BARU
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]   
+}
+
+// Model Shift Kerja
 model Shift {
   id               Int      @id @default(autoincrement())
-  name             String   // Contoh: Shift Pagi, Jam Kantor Normal
-  checkInTime      String   // Format Jam, contoh: "08:00"
-  checkOutTime     String   // Format Jam, contoh: "17:00"
-  toleranceMinutes Int      @default(15) // Toleransi keterlambatan dalam menit
+  name             String   
+  checkInTime      String   
+  checkOutTime     String   
+  toleranceMinutes Int      @default(15) 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  users            User[]   // Relasi: Satu shift bisa dimiliki oleh banyak pegawai
+  users            User[]   
 }
 
 model User {
@@ -38,9 +49,12 @@ model User {
   email        String   @unique
   password     String
   role         Role     @default(EMPLOYEE)
-  department   String?  // Contoh: IT, HR, Finance, Operasional
   isActive     Boolean  @default(true)
   
+  // INI BAGIAN YANG BARU KITA UBAH (Relasi ke Departemen)
+  departmentId Int?     
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+
   // Relasi ke Shift Kerja
   shiftId      Int?     
   shift        Shift?   @relation(fields: [shiftId], references: [id], onDelete: SetNull)
@@ -60,7 +74,6 @@ model Attendance {
   checkOut       DateTime?        
   status         AttendanceStatus @default(PRESENT)
   
-  // Data Validasi Tambahan (Selfie & GPS)
   checkInLat     Float?           
   checkInLong    Float?           
   checkInSelfie  String?          
@@ -75,8 +88,8 @@ model Attendance {
 model OfficeLocation {
   id        String   @id @default(uuid())
   name      String   @default("Kantor Pusat")
-  latitude  Float    // Garis lintang (Latitude)
-  longitude Float    // Garis bujur (Longitude)
-  radius    Int      // Radius dalam meter (contoh: 100 meter)
+  latitude  Float    
+  longitude Float    
+  radius    Int      
   updatedAt DateTime @updatedAt
 }

@@ -4,6 +4,8 @@ import 'add_employee_screen.dart';
 import 'edit_employee_screen.dart';
 import 'login_screen.dart';
 import 'dashboard_screen.dart'; // <-- Diperlukan untuk mengakses halaman absen pegawai
+import 'shift_management_screen.dart'; // <-- Halaman manajemen shift baru
+import 'department_management_screen.dart';
 
 class AdminResponsiveLayout extends StatefulWidget {
   const AdminResponsiveLayout({Key? key}) : super(key: key);
@@ -18,6 +20,9 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
   final List<String> _menuTitles = [
     'Manajemen Pegawai',
     'Pengaturan Geofencing',
+    'Pengaturan Shift', // <-- Menu baru untuk shift
+    'Pengaturan Departemen'
+
   ];
 
   @override
@@ -33,53 +38,58 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
     }
   }
 
-  // ================= TAMPILAN DESKTOP =================
+// ================= TAMPILAN DESKTOP =================
   Widget _buildDesktopLayout() {
     return Scaffold(
       body: Row(
         children: [
-          Container(
-            width: 260,
+          // MEMPERBAIKI ERROR LISTTILE: Ganti Container menjadi Material
+          Material(
             color: Color(0xFF0F172A),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Padding(
-                  padding: EdgeInsets.all(24.0),
-                  child: Text('DAPP Admin', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                ),
-                Divider(color: Colors.white24, height: 1),
-                SizedBox(height: 10),
-                _buildSidebarItem(Icons.people, 'Manajemen Pegawai', 0),
-                _buildSidebarItem(Icons.map, 'Pengaturan Geofencing', 1),
-                
-                Divider(color: Colors.white24, height: 20),
-                
-                // Pintas Menu Absensi untuk Admin di Desktop
-                ListTile(
-                  leading: Icon(Icons.camera_alt, color: Colors.blueAccent),
-                  title: Text('Menu Absensi Saya', style: TextStyle(color: Colors.white, fontSize: 14)),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => DashboardScreen()),
-                    );
-                  },
-                ),
-
-                Spacer(),
-                Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      await ApiService().logout();
-                      Navigator.pushReplacementNamed(context, '/');
-                    },
-                    icon: Icon(Icons.logout, color: Colors.redAccent),
-                    label: Text('Keluar', style: TextStyle(color: Colors.redAccent)),
+            child: SizedBox(
+              width: 260,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: EdgeInsets.all(24.0),
+                    child: Text('DAPP Admin', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
                   ),
-                ),
-              ],
+                  Divider(color: Colors.white24, height: 1),
+                  SizedBox(height: 10),
+                  _buildSidebarItem(Icons.people, 'Manajemen Pegawai', 0),
+                  _buildSidebarItem(Icons.map, 'Pengaturan Geofencing', 1),
+                  _buildSidebarItem(Icons.schedule, 'Pengaturan Shift', 2),
+                  _buildSidebarItem(Icons.business, 'Pengaturan Departemen', 3), // Hapus komentar ini jika Anda sudah buat menu Departemen
+                  
+                  Divider(color: Colors.white24, height: 20),
+                  
+                  // Pintas Menu Absensi untuk Admin di Desktop
+                  ListTile(
+                    leading: Icon(Icons.camera_alt, color: Colors.blueAccent),
+                    title: Text('Menu Absensi Saya', style: TextStyle(color: Colors.white, fontSize: 14)),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => DashboardScreen()),
+                      );
+                    },
+                  ),
+
+                  Spacer(),
+                  Padding(
+                    padding: EdgeInsets.all(16.0),
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        await ApiService().logout();
+                        Navigator.pushReplacementNamed(context, '/');
+                      },
+                      icon: Icon(Icons.logout, color: Colors.redAccent),
+                      label: Text('Keluar', style: TextStyle(color: Colors.redAccent)),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
           Expanded(
@@ -108,7 +118,6 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
       ),
     );
   }
-
   // ================= TAMPILAN MOBILE (HP) =================
   Widget _buildMobileLayout() {
     return Scaffold(
@@ -160,6 +169,27 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
                 Navigator.pop(context);
               },
             ),
+            ListTile(
+              leading: Icon(Icons.schedule),
+              title: Text('Pengaturan Shift'),
+              selected: _selectedIndex == 2,
+              onTap: () {
+                setState(() => _selectedIndex = 2);
+                Navigator.pop(context);
+              },
+            ),
+            Divider(color: Colors.grey[300]),
+            // === TAMBAHKAN MENU DEPARTEMEN DI SINI ===
+            ListTile(
+              leading: Icon(Icons.business),
+              title: Text('Pengaturan Departemen'),
+              selected: _selectedIndex == 3,
+              onTap: () {
+                setState(() => _selectedIndex = 3);
+                Navigator.pop(context);
+              },
+            ),
+            // =========================================
             Divider(color: Colors.grey[300]),
             
             // Pintas Menu Absensi Khusus Admin di Drawer HP
@@ -191,17 +221,19 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
 
   Widget _buildSidebarItem(IconData icon, String label, int index) {
     bool isSelected = _selectedIndex == index;
-    return InkWell(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        color: isSelected ? Colors.blueAccent.withOpacity(0.2) : Colors.transparent,
-        child: Row(
-          children: [
-            Icon(icon, color: isSelected ? Colors.blueAccent : Colors.white70),
-            SizedBox(width: 16),
-            Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
-          ],
+    return Material(
+      color: isSelected ? Colors.blueAccent.withOpacity(0.2) : Colors.transparent,
+      child: InkWell(
+        onTap: () => setState(() => _selectedIndex = index),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? Colors.blueAccent : Colors.white70),
+              SizedBox(width: 16),
+              Text(label, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
+            ],
+          ),
         ),
       ),
     );
@@ -209,14 +241,18 @@ class _AdminResponsiveLayoutState extends State<AdminResponsiveLayout> {
 
   Widget _buildActiveContent() {
     if (_selectedIndex == 0) {
-      return AdminEmployeeListView(); // Tampilan List Pegawai yang ramah HP
-    } else {
+      return AdminEmployeeListView(); // Tampilan List Pegawai yang ramah HP/Desktop
+    } else if (_selectedIndex == 1) {
       return GeofencingSettingsView(); // Form Geofencing
+    } else if (_selectedIndex == 2) {
+      return ShiftManagementScreen(); // Halaman Shift Kerja baru
+    } else {
+      return DepartmentManagementScreen(); // Halaman Departemen baru
     }
   }
 }
 
-// ================= DAFTAR PEGAWAI VERSI LIST CARD (RAMAH HP) =================
+// ================= DAFTAR PEGAWAI VERSI LIST CARD =================
 class AdminEmployeeListView extends StatefulWidget {
   const AdminEmployeeListView({Key? key}) : super(key: key);
 
@@ -289,6 +325,10 @@ class _AdminEmployeeListViewState extends State<AdminEmployeeListView> {
                         children: [
                           SizedBox(height: 4),
                           Text(user['email'] ?? '-'),
+                          if (user['department'] != null && user['department'].toString().isNotEmpty) ...[
+                            SizedBox(height: 2),
+                            Text('Dept: ${user['department']}', style: TextStyle(fontSize: 12, color: Colors.grey[700])),
+                          ],
                           SizedBox(height: 6),
                           Container(
                             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),

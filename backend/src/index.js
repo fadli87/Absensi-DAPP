@@ -9,6 +9,7 @@ const attendanceRoutes = require('./routes/attendance');
 const userRoutes = require('./routes/user');
 const officeRoutes = require('./routes/office');
 const shiftRoutes = require('./routes/shift'); // <-- 1. Impor rute shift
+const departmentRoutes = require('./routes/department'); // <-- 1. Impor rute department
 
 const app = express();
 
@@ -21,6 +22,8 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/office', officeRoutes);
 app.use('/api/shifts', shiftRoutes); // <-- 2. Daftarkan endpoint shift
+app.use('/api/departments', departmentRoutes); // <-- 2. Daftarkan endpoint department
+
 
 app.get('/', (req, res) => {
   res.json({ message: 'API Absensi Backend is running smoothly!' });
